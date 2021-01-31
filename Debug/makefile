@@ -2,20 +2,20 @@
 # Automatically-generated file. Do not edit!
 ################################################################################
 
-CG_TOOL_ROOT := /home/alex/ti/ccsv7/tools/compiler/gcc-arm-none-eabi-6-2017-q1-update
+CG_TOOL_ROOT := /opt/ti/ccs1020/ccs/tools/compiler/gcc-arm-none-eabi-7-2017-q4-major
 
 GEN_OPTS__FLAG := 
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
 "./adc.o" \
-"./char_lib.o" \
 "./game.o" \
-"./lcd.o" \
 "./main.o" \
-"./serial.o" \
 "./startup_msp432p401r_gcc.o" \
 "./system_msp432p401r.o" \
+"./msp_boosterpack_lcd/char_lib.o" \
+"./msp_boosterpack_lcd/lcd.o" \
+"./msp_boosterpack_lcd/serial.o" \
 -Wl,-T"../msp432p401r.lds" \
 $(GEN_CMDS__FLAG) \
 -Wl,--start-group \
@@ -32,7 +32,9 @@ RMDIR := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include msp_boosterpack_lcd/subdir_vars.mk
 -include subdir_rules.mk
+-include msp_boosterpack_lcd/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -129,41 +131,42 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-Final_Project.out \
+boost-msp432-game.out \
 
 EXE_OUTPUTS__QUOTED += \
-"Final_Project.out" \
+"boost-msp432-game.out" \
 
 BIN_OUTPUTS += \
-Final_Project.hex \
+boost-msp432-game.hex \
 
 BIN_OUTPUTS__QUOTED += \
-"Final_Project.hex" \
+"boost-msp432-game.hex" \
 
 
 # All Target
 all: $(OBJS) $(LDS_SRCS) $(GEN_CMDS)
-	@$(MAKE) --no-print-directory -Onone "Final_Project.out"
+	@$(MAKE) --no-print-directory -Onone "boost-msp432-game.out"
 
 # Tool invocations
-Final_Project.out: $(OBJS) $(LDS_SRCS) $(GEN_CMDS)
-	@echo 'Building target: $@'
+boost-msp432-game.out: $(OBJS) $(LDS_SRCS) $(GEN_CMDS)
+	@echo 'Building target: "$@"'
 	@echo 'Invoking: GNU Linker'
-	"/home/alex/ti/ccsv7/tools/compiler/gcc-arm-none-eabi-6-2017-q1-update/bin/arm-none-eabi-gcc" -D__MSP432P401R__ -Dgcc -g -gdwarf-3 -gstrict-dwarf -Wall -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Wl,-Map,"Final_Project.map" -mthumb -g -gstrict-dwarf -Wall -o"Final_Project.out" $(ORDERED_OBJS)
-	@echo 'Finished building target: $@'
+	"/opt/ti/ccs1020/ccs/tools/compiler/gcc-arm-none-eabi-7-2017-q4-major/bin/arm-none-eabi-gcc-7.2.1" -D__MSP432P401R__ -Dgcc -g -gdwarf-3 -gstrict-dwarf -Wall -march=armv7e-m -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -Wl,-Map,"boost-msp432-game.map" -mthumb -g -gstrict-dwarf -Wall -o"boost-msp432-game.out" $(ORDERED_OBJS)
+	@echo 'Finished building target: "$@"'
 	@echo ' '
 
-Final_Project.hex: $(EXE_OUTPUTS)
+boost-msp432-game.hex: $(EXE_OUTPUTS)
+	@echo 'Building files: $(strip $(EXE_OUTPUTS__QUOTED))'
 	@echo 'Invoking: GNU Objcopy Utility'
-	"/home/alex/ti/ccsv7/tools/compiler/gcc-arm-none-eabi-6-2017-q1-update/bin/arm-none-eabi-objcopy"  $(EXE_OUTPUTS__QUOTED) "Final_Project.hex"
-	@echo 'Finished building: $@'
+	"/opt/ti/ccs1020/ccs/tools/compiler/gcc-arm-none-eabi-7-2017-q4-major/bin/arm-none-eabi-objcopy"  $(EXE_OUTPUTS__QUOTED) "boost-msp432-game.hex"
+	@echo 'Finished building: $(strip $(EXE_OUTPUTS__QUOTED))'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "adc.o" "char_lib.o" "game.o" "lcd.o" "main.o" "serial.o" "startup_msp432p401r_gcc.o" "system_msp432p401r.o" 
-	-$(RM) "adc.d" "char_lib.d" "game.d" "lcd.d" "main.d" "serial.d" "startup_msp432p401r_gcc.d" "system_msp432p401r.d" 
+	-$(RM) "adc.o" "game.o" "main.o" "startup_msp432p401r_gcc.o" "system_msp432p401r.o" "msp_boosterpack_lcd/char_lib.o" "msp_boosterpack_lcd/lcd.o" "msp_boosterpack_lcd/serial.o" 
+	-$(RM) "adc.d" "game.d" "main.d" "startup_msp432p401r_gcc.d" "system_msp432p401r.d" "msp_boosterpack_lcd/char_lib.d" "msp_boosterpack_lcd/lcd.d" "msp_boosterpack_lcd/serial.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

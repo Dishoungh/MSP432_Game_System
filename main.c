@@ -47,29 +47,33 @@
 
 #define ENABLE_SLEEPONEXIT (0x00000002)
 
-int main(void)
+void init(void)
 {
-
-    WDTCTL = WDTPW | WDTHOLD;                    /* Stop watchdog timer */
-	
     configure_ADC();
     configure_clocks();
     configure_SPI();
     initialize_LCD();
     initialize_buttons();
     __enable_irq();
+}
 
+
+int main(void)
+{
+
+    WDTCTL = WDTPW | WDTHOLD;                    /* Stop watchdog timer */
+    init();
     SCB->SCR &= ~ENABLE_SLEEPONEXIT;            //wake up on exit from ISR
 
 
-    while(1){
+    while(1)
+    {
         while(timer_delay);
         /*draw the start screen and wait for user input*/
         draw_start_screen();
         while(timer_delay);
 
         select_game();
-
         run_game(game_array[current_game]);
     }
 
