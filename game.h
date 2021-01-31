@@ -63,6 +63,8 @@
 #define DODGE_OBS_3_DELAY       30
 #define DODGE_OBS_4_DELAY       45
 
+#define DODGE_OBS_PAUSE_DELAY   200
+
 //macros for debug
 #define DEBUG_DIRECTION_X       (LCD_MAX_X-(LCD_CHAR_WIDTH*4))
 #define DEBUG_VERTICAL_Y        107
@@ -86,7 +88,8 @@ typedef enum {
 //enums used in dodge game
 typedef enum {
     DEAD,
-    ALIVE
+    ALIVE,
+    PAUSED
 }DODGE_STATE;
 
 typedef enum
