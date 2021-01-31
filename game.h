@@ -89,6 +89,15 @@ typedef enum {
     ALIVE
 }DODGE_STATE;
 
+typedef enum
+{
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN,
+    NONE
+}DIRECTION;
+
 //variable for reading buttons globally
 uint8_t button_flag;
 

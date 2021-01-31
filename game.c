@@ -497,13 +497,16 @@ void run_dodge(void){
 
     //initialize player state and obstacle states
     DODGE_STATE player_state = ALIVE;
-    DODGE_STATE obs_1_state = ALIVE;
-    DODGE_STATE obs_2_state = DEAD;
-    DODGE_STATE obs_3_state = DEAD;
-    DODGE_STATE obs_4_state = DEAD;
+    DODGE_STATE obs_1_state  = ALIVE;
+    DODGE_STATE obs_2_state  = DEAD;
+    DODGE_STATE obs_3_state  = DEAD;
+    DODGE_STATE obs_4_state  = DEAD;
+    DODGE_STATE bullet_state = DEAD;
 
     //initialize player and obstacle rectangles
     CIRCLE player;
+    DIRECTION xdir;
+    DIRECTION ydir;
     initialize_circle(&player,DODGE_PLAYER_START_X,DODGE_PLAYER_START_Y,DODGE_PLAYER_RADIUS,NAVY,NAVY);
     LCD_draw_circle(player);
 
@@ -528,6 +531,11 @@ void run_dodge(void){
     int8_t obs_4_x_velocity = -1 * obs_speed;
     int8_t obs_4_y_velocity = obs_speed;
 
+    // Initialize Bullet
+    CIRCLE bullet;
+    int8_t bullet_x_velocity;
+    int8_t bullet_y_velocity;
+
     LCD_write_string("TIME:",80,0,BLACK,5);
 
     LCD_draw_hline(10,BLACK);
@@ -537,29 +545,38 @@ void run_dodge(void){
     while(timer_delay);
 
     //enter game loop
-    while(player_state == ALIVE){
+    while(player_state == ALIVE)
+    {
         ADC14->CTL0 |= ADC14_CTL0_SC;       //start ADC conversion
-        if(timer_trigger){
+        if(timer_trigger)
+        {
+            xdir = RIGHT;
+            ydir = NONE;
+
             //logic to move player around
             if((bit_joy_x > JOY_HIGH_THRESHOLD) && (player.x >= 1)){
                 LCD_erase_circle(player);
                 player.x--;
                 LCD_draw_circle(player);
+                xdir = LEFT;
             }
             else if((bit_joy_x < JOY_LOW_THRESHOLD) && player.x <= (LCD_MAX_X-player.radius)){
                 LCD_erase_circle(player);
                 player.x++;
                 LCD_draw_circle(player);
+                xdir = RIGHT;
             }
             if((bit_joy_y > JOY_HIGH_THRESHOLD) && player.y <= (LCD_MAX_Y-player.radius)){
                 LCD_erase_circle(player);
                 player.y++;
                 LCD_draw_circle(player);
+                ydir = UP;
             }
             else if((bit_joy_y < JOY_LOW_THRESHOLD) && ((player.y - player.radius) >= 12)){
                 LCD_erase_circle(player);
                 player.y--;
                 LCD_draw_circle(player);
+                ydir = DOWN;
             }
 
             //logic for movement of obstacle 1
@@ -667,8 +684,77 @@ void run_dodge(void){
             }
 
             //if the game goes long enough increase the speed
-            if(timer_count == 100){
+            if(timer_count == 100)
+            {
                 obs_speed = 2;
+            }
+
+            //Spawn Bullet
+            if (button_flag && (bullet_state == DEAD))
+            {
+                bullet_state = ALIVE;
+                initialize_circle(&bullet,DODGE_PLAYER_START_X,DODGE_PLAYER_START_Y,DODGE_PLAYER_RADIUS-3,NAVY,NAVY);
+
+                if (xdir == LEFT)
+                    bullet_x_velocity = 2 * -1 * obs_speed;
+                else if (xdir == RIGHT)
+                    bullet_x_velocity = 2 * obs_speed;
+
+                if (ydir == UP)
+                    bullet_y_velocity = 2 * obs_speed;
+                else if (ydir == DOWN)
+                    bullet_y_velocity = 2 * -1 * obs_speed;
+
+
+                button_flag = 0;
+            }
+
+            if (bullet_state == ALIVE)
+            {
+                /* Checks Collision with Borders or any Obstacles; If so, destroy bullet */
+                if ((bullet_state == ALIVE) && check_rect_circ_collision(obs_1, bullet))          // Collision with Obstacle 1
+                {
+                    LCD_erase_circle(bullet);
+                    bullet_state = DEAD;
+
+                    // Stop Obstacle 1 for a brief period of time
+                }
+                else if ((bullet_state == ALIVE) && check_rect_circ_collision(obs_2, bullet))     // Collision with Obstacle 2
+                {
+                    LCD_erase_circle(bullet);
+                    bullet_state = DEAD;
+
+                    // Stop Obstacle 2 for a brief period of time
+                }
+                else if ((bullet_state == ALIVE) && check_rect_circ_collision(obs_3, bullet))     // Collision with Obstacle 3
+                {
+                    LCD_erase_circle(bullet);
+                    bullet_state = DEAD;
+
+                    // Stop Obstacle 3 for a brief period of time
+                }
+                else if ((bullet_state == ALIVE) && check_rect_circ_collision(obs_4, bullet))     // Collision with Obstacle 4
+                {
+                    LCD_erase_circle(bullet);
+                    bullet_state = DEAD;
+
+                    // Stop Obstacle 4 for a brief period of time
+                }                                                                                               // Collision with Any Border
+                else if ((bullet_state == ALIVE) && ((bullet.x <= 0) || (bullet.x >= (LCD_MAX_X - bullet.radius)) || (bullet.y <= 11) || (bullet.y >= (LCD_MAX_Y - bullet.radius))))
+                {
+                    LCD_erase_circle(bullet);
+                    bullet_state = DEAD;
+                }
+
+                /* Bullet Movement Logic */
+                if(bullet_state != DEAD)
+                {
+                    LCD_erase_circle(bullet);
+                    bullet.x += bullet_x_velocity;
+                    bullet.y += bullet_y_velocity;
+                    LCD_draw_circle(bullet);
+                }
+
             }
 
             //print time survived
@@ -676,7 +762,6 @@ void run_dodge(void){
             LCD_write_string(timer_count_string,40,0,BLACK,sizeof(timer_count_string)/sizeof(uint8_t));
             timer_trigger = 0;
         }
-
     }
 
     LCD_erase_screen();
@@ -718,6 +803,7 @@ uint8_t check_rect_circ_collision(RECT rect, CIRCLE circ){
         return 0;
     }
 }
+
 //bottom button interrupt handler
 void PORT3_IRQHandler(void){
     if(P3->IFG & BIT3){
