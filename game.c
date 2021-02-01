@@ -8,7 +8,7 @@
 #include "game.h"
 #include "msp_boosterpack_lcd/lcd.h"
 
-const GAME game_array[3] = {DEBUG,PONG,DODGE};
+const GAME game_array[4] = {DEBUG,PONG,DODGE,PATTERN};
 
 void initialize_buttons(void){
     button_flag = 0;
@@ -53,7 +53,7 @@ void draw_start_screen(void){
 void select_game(void){
     LCD_erase_screen();
 
-    current_game = 2;
+    current_game = 3;
 
     RECT game_menu;
     initialize_rectangle(&game_menu,GAME_MENU_X,GAME_MENU_Y,GAME_MENU_WIDTH,GAME_MENU_HEIGHT,BLACK);
@@ -62,10 +62,11 @@ void select_game(void){
     initialize_rectangle(&game_select,GAME_SELECT_X,GAME_SELECT_Y,GAME_SELECT_WIDTH,GAME_SELECT_HEIGHT,RED);
     LCD_draw_rectangle(game_select);
 
-    LCD_write_string("CHOOSE GAME",game_menu.x,game_menu.y + 3*LCD_CHAR_HEIGHT,RED,11);
-    LCD_write_string(" DEBUG     ",game_menu.x,game_menu.y + 2*LCD_CHAR_HEIGHT,BLACK,11);
-    LCD_write_string(" PONG      ",game_menu.x,game_menu.y + LCD_CHAR_HEIGHT,BLACK,11);
-    LCD_write_string(" DODGE     ",game_menu.x,game_menu.y,BLACK,11);
+    LCD_write_string("CHOOSE GAME",game_menu.x,game_menu.y + 4*LCD_CHAR_HEIGHT,RED,11);
+    LCD_write_string(" DEBUG     ",game_menu.x,game_menu.y + 3*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" PONG      ",game_menu.x,game_menu.y + 2*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" DODGE     ",game_menu.x,game_menu.y + 1*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" PATTERN   ",game_menu.x,game_menu.y + 0*LCD_CHAR_HEIGHT,BLACK,11);
 
 
     while(!button_flag){
@@ -82,7 +83,7 @@ void select_game(void){
                 timer_delay = 10;
             }
             //if joystick is moved down and the selection is not already at the bottom, move selection
-            else if((bit_joy_y < JOY_LOW_THRESHOLD) && (current_game < 2)){
+            else if((bit_joy_y < JOY_LOW_THRESHOLD) && (current_game < 3)){
                 LCD_erase_rectangle(game_select);
                 //change game selection
                 current_game++;
@@ -97,6 +98,8 @@ void select_game(void){
     game_menu.x -= LCD_CHAR_WIDTH;
     LCD_erase_rectangle(game_menu);
     button_flag = 0;
+
+    LCD_erase_screen();
 
     timer_delay = 25;
 }
@@ -134,8 +137,210 @@ void run_game(GAME game){
         full_debug();
         button_flag = 0;
         break;
+
+    case PATTERN:
+        run_pattern();
+        button_flag = 0;
+        break;
     }
 }
+
+/* Runs Pattern Game */
+void run_pattern(void)
+{
+    RECT r1;
+    initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+    LCD_draw_rectangle(r1);
+
+    RECT r2;
+    initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+    LCD_draw_rectangle(r2);
+
+    RECT r3;
+    initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+    LCD_draw_rectangle(r3);
+
+    uint8_t* cpu_picks[3], player_picks[3];
+    uint8_t i, score = 0;
+    PATTERN_STATE state = SUCCESS;
+    timer_count = 0;
+
+    /* Game Loop */
+    while (state == SUCCESS)
+    {
+        //Create Pattern and Show Pattern
+        for (i = 0; i < 3; i++)
+        {
+            cpu_picks[i] = (uint8_t)(timer_count % 3);
+
+            if (cpu_picks[i] == 0)                  //Picks first box
+            {
+                LCD_erase_rectangle(r1);
+                initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, GREEN);
+                LCD_draw_rectangle(r1);
+            }
+            else if(cpu_picks[i] == 1)              //Picks second box
+            {
+                LCD_erase_rectangle(r2);
+                initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, GREEN);
+                LCD_draw_rectangle(r2);
+            }
+            else                                //Picks third box
+            {
+                LCD_erase_rectangle(r3);
+                initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, GREEN);
+                LCD_draw_rectangle(r3);
+            }
+
+            //Delay for a little while
+            for(uint32_t j = 0; j < PATTERN_SHOW_DELAY; j++);
+
+            //Re-color Selected Rectangle Back to Black
+            if (cpu_picks[i] == 0)                  //Picks first box
+            {
+                LCD_erase_rectangle(r1);
+                initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                LCD_draw_rectangle(r1);
+            }
+            else if(cpu_picks[i] == 1)              //Picks second box
+            {
+                LCD_erase_rectangle(r2);
+                initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                LCD_draw_rectangle(r2);
+            }
+            else                                //Picks third box
+            {
+                LCD_erase_rectangle(r3);
+                initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                LCD_draw_rectangle(r3);
+            }
+        }
+
+        uint8_t current_choice = 0;
+        LCD_erase_rectangle(r1);
+        initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, NAVY);
+        LCD_draw_rectangle(r1);
+
+        timer_delay = 0;
+        button_flag = 0;
+
+        //Pick Boxes to recreate pattern
+        for (i = 0; i < 3; i++)
+        {
+            while(!button_flag)
+            {
+                ADC14->CTL0 |= ADC14_CTL0_SC;       //start ADC conversion
+                if(timer_trigger && !timer_delay)
+                {
+                    // Move highlight by joystick
+                    if((bit_joy_x > JOY_HIGH_THRESHOLD) && (current_choice < 2)) //Select Right
+                    {
+                        current_choice++;
+
+                        if (current_choice == 1)
+                        {
+                            LCD_erase_rectangle(r1);
+                            initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r1);
+
+                            LCD_erase_rectangle(r2);
+                            initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, NAVY);
+                            LCD_draw_rectangle(r2);
+
+                            LCD_erase_rectangle(r3);
+                            initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r3);
+                        }
+                        else if (current_choice == 2)
+                        {
+                            LCD_erase_rectangle(r1);
+                            initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r1);
+
+                            LCD_erase_rectangle(r2);
+                            initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r2);
+
+                            LCD_erase_rectangle(r3);
+                            initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, NAVY);
+                            LCD_draw_rectangle(r3);
+                        }
+                        timer_delay = 10;
+                    }
+                    else if((bit_joy_x < JOY_LOW_THRESHOLD) && (current_choice > 0)) //Select Left
+                    {
+                        current_choice--;
+
+                        if (current_choice == 0)
+                        {
+                            LCD_erase_rectangle(r1);
+                            initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, NAVY);
+                            LCD_draw_rectangle(r1);
+
+                            LCD_erase_rectangle(r2);
+                            initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r2);
+
+                            LCD_erase_rectangle(r3);
+                            initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r3);
+                        }
+                        else if (current_choice == 1)
+                        {
+                            LCD_erase_rectangle(r1);
+                            initialize_rectangle(&r1, PATTERN_R1_START_X, PATTERN_R1_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r1);
+
+                            LCD_erase_rectangle(r2);
+                            initialize_rectangle(&r2, PATTERN_R2_START_X, PATTERN_R2_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, NAVY);
+                            LCD_draw_rectangle(r2);
+
+                            LCD_erase_rectangle(r3);
+                            initialize_rectangle(&r3, PATTERN_R3_START_X, PATTERN_R3_START_Y, PATTERN_BOX_WIDTH, PATTERN_BOX_HEIGHT, BLACK);
+                            LCD_draw_rectangle(r3);
+                        }
+                        timer_delay = 10;
+                    }
+                }
+            }
+            button_flag = 0;
+            player_picks[i] = current_choice;
+        }
+
+        //Compare patterns
+        for (i = 0; i < 3; i++)
+        {
+            if (cpu_picks[i] != player_picks[i])
+            {
+                state = FAIL;
+                break;
+            }
+        }
+
+        if (state != FAIL)
+        {
+            score++;
+        }
+    }
+
+    //Print Score
+    LCD_erase_screen();
+
+
+    uint8_t score_string[5] = "     ";
+    itoa(score,score_string);
+
+    //print ending screen
+    LCD_write_string("YOU LOST",40,60,RED,9);
+    LCD_write_string("SCORE:",55,40,NAVY,11);
+    LCD_write_string(score_string,15,40,NAVY,sizeof(score_string)/sizeof(uint8_t));
+
+    button_flag = 0;
+
+    while(!button_flag);
+}
+
+
 /*function that runs the debug app*/
 void full_debug(void){
     uint8_t button_toggle = 0;

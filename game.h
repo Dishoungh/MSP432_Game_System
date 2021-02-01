@@ -73,11 +73,23 @@
 #define DEBUG_BUTTON_TOGGLE_X   (LCD_MAX_X-(LCD_CHAR_WIDTH*9))
 #define DEBUG_BUTTON_Y          67
 
+//Macros for Pattern game
+#define PATTERN_SHOW_DELAY      2000000
+#define PATTERN_R1_START_X      85
+#define PATTERN_R1_START_Y      50
+#define PATTERN_R2_START_X      50
+#define PATTERN_R2_START_Y      50
+#define PATTERN_R3_START_X      15
+#define PATTERN_R3_START_Y      50
+#define PATTERN_BOX_WIDTH       20
+#define PATTERN_BOX_HEIGHT      20
+
 //enums used menu navigation
 typedef enum {
     DEBUG,
     PONG,
-    DODGE
+    DODGE,
+    PATTERN
 }GAME;
 
 typedef enum {
@@ -101,11 +113,18 @@ typedef enum
     NONE
 }DIRECTION;
 
+//Enums used in Pattern
+typedef enum
+{
+    SUCCESS,
+    FAIL
+}PATTERN_STATE;
+
 //variable for reading buttons globally
 uint8_t button_flag;
 
 //variables for navigating menu
-extern const GAME game_array[3];
+extern const GAME game_array[4];
 GAME current_game;
 GAME_MODE pong_mode;
 RECT start_screen;
