@@ -3,12 +3,14 @@
  *
  *  Created on: Dec 7, 2017
  *      Author: alex
+ *
+ *  Modified by: Dishoungh
  */
 #include "msp.h"
 #include "game.h"
 #include "msp_boosterpack_lcd/lcd.h"
 
-const GAME game_array[4] = {DEBUG,PONG,DODGE,PATTERN};
+const GAME game_array[5] = {DEBUG,PONG,DODGE,PATTERN,SNAKE};
 
 void initialize_buttons(void){
     button_flag = 0;
@@ -53,7 +55,7 @@ void draw_start_screen(void){
 void select_game(void){
     LCD_erase_screen();
 
-    current_game = 3;
+    current_game = 4;
 
     RECT game_menu;
     initialize_rectangle(&game_menu,GAME_MENU_X,GAME_MENU_Y,GAME_MENU_WIDTH,GAME_MENU_HEIGHT,BLACK);
@@ -62,11 +64,12 @@ void select_game(void){
     initialize_rectangle(&game_select,GAME_SELECT_X,GAME_SELECT_Y,GAME_SELECT_WIDTH,GAME_SELECT_HEIGHT,RED);
     LCD_draw_rectangle(game_select);
 
-    LCD_write_string("CHOOSE GAME",game_menu.x,game_menu.y + 4*LCD_CHAR_HEIGHT,RED,11);
-    LCD_write_string(" DEBUG     ",game_menu.x,game_menu.y + 3*LCD_CHAR_HEIGHT,BLACK,11);
-    LCD_write_string(" PONG      ",game_menu.x,game_menu.y + 2*LCD_CHAR_HEIGHT,BLACK,11);
-    LCD_write_string(" DODGE     ",game_menu.x,game_menu.y + 1*LCD_CHAR_HEIGHT,BLACK,11);
-    LCD_write_string(" PATTERN   ",game_menu.x,game_menu.y + 0*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string("CHOOSE GAME",game_menu.x,game_menu.y + 5*LCD_CHAR_HEIGHT,RED,11);
+    LCD_write_string(" DEBUG     ",game_menu.x,game_menu.y + 4*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" PONG      ",game_menu.x,game_menu.y + 3*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" DODGE     ",game_menu.x,game_menu.y + 2*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" PATTERN   ",game_menu.x,game_menu.y + 1*LCD_CHAR_HEIGHT,BLACK,11);
+    LCD_write_string(" SNAKE     ",game_menu.x,game_menu.y + 0*LCD_CHAR_HEIGHT,BLACK,11);
 
 
     while(!button_flag){
@@ -83,7 +86,7 @@ void select_game(void){
                 timer_delay = 10;
             }
             //if joystick is moved down and the selection is not already at the bottom, move selection
-            else if((bit_joy_y < JOY_LOW_THRESHOLD) && (current_game < 3)){
+            else if((bit_joy_y < JOY_LOW_THRESHOLD) && (current_game < 4)){
                 LCD_erase_rectangle(game_select);
                 //change game selection
                 current_game++;
@@ -142,7 +145,196 @@ void run_game(GAME game){
         run_pattern();
         button_flag = 0;
         break;
+
+    case SNAKE:
+        run_snake();
+        button_flag = 0;
+        break;
     }
+}
+
+/* Runs Snake Game */
+void run_snake(void)
+{
+    // Objects
+    RECT left_border, upper_border, right_border, lower_border;
+    SNAKE_PLAYER* player[SNAKE_PLAYER_MAX_SIZE];
+    CIRCLE food;
+    STATE food_state = DEAD, player_state = ALIVE;
+    player[0]->dir = RIGHT;
+    uint8_t player_size = 1;
+
+    // Borders
+    initialize_rectangle(&left_border, (LCD_MAX_X - SNAKE_BORDER_WIDTH), LCD_MIN_Y, SNAKE_BORDER_WIDTH, LCD_MAX_Y, RED);
+    initialize_rectangle(&upper_border, LCD_MIN_X, (LCD_MAX_Y - SNAKE_BORDER_HEIGHT), LCD_MAX_X, SNAKE_BORDER_HEIGHT, RED);
+    initialize_rectangle(&right_border, LCD_MIN_X, LCD_MIN_Y, SNAKE_BORDER_WIDTH, LCD_MAX_Y, RED);
+    initialize_rectangle(&lower_border, LCD_MIN_X, LCD_MIN_Y, LCD_MAX_X, SNAKE_BORDER_HEIGHT, RED);
+
+    LCD_draw_rectangle(left_border);
+    LCD_draw_rectangle(upper_border);
+    LCD_draw_rectangle(right_border);
+    LCD_draw_rectangle(lower_border);
+
+    // Head
+    initialize_rectangle(&player[0]->body, SNAKE_PLAYER_START_X, SNAKE_PLAYER_START_Y, SNAKE_PLAYER_WIDTH, SNAKE_PLAYER_HEIGHT, NAVY);
+    LCD_draw_rectangle(player[0]->body);
+
+    timer_count = 0;
+    timer_delay = 20;
+    while(timer_delay);
+
+    //Delete this
+    button_flag = 0;
+
+    //enter game loop
+    while(player_state == ALIVE)
+    {
+        ADC14->CTL0 |= ADC14_CTL0_SC;       //start ADC conversion
+        if(timer_trigger && ~timer_delay)
+        {
+            //Player Head Movement
+            if((bit_joy_x > JOY_HIGH_THRESHOLD)) //Right
+            {
+                player[0]->dir = RIGHT;
+            }
+            else if((bit_joy_x < JOY_LOW_THRESHOLD)) //Left
+            {
+                player[0]->dir = LEFT;
+            }
+            if((bit_joy_y > JOY_HIGH_THRESHOLD)) //Up
+            {
+                player[0]->dir = UP;
+            }
+            else if((bit_joy_y < JOY_LOW_THRESHOLD)) //Down
+            {
+                player[0]->dir = DOWN;
+            }
+
+            // Move Snake
+            for (uint8_t j = 0; j < player_size; j++)
+            {
+                player[j]->prev_x = player[j]->body.x;
+                player[j]->prev_y = player[j]->body.y;
+                // Move Head according to direction
+                if (!j)
+                {
+                    switch(player[j]->dir)
+                    {
+                        case RIGHT:
+                            LCD_erase_rectangle(player[j]->body);
+                            (player[j]->body).x -= 5;
+                            LCD_draw_rectangle(player[j]->body);
+                            break;
+                        case LEFT:
+                            LCD_erase_rectangle(player[j]->body);
+                            (player[j]->body).x += 5;
+                            LCD_draw_rectangle(player[j]->body);
+                            break;
+                        case UP:
+                            LCD_erase_rectangle(player[j]->body);
+                            (player[j]->body).y += 5;
+                            LCD_draw_rectangle(player[j]->body);
+                            break;
+                        case DOWN:
+                            LCD_erase_rectangle(player[j]->body);
+                            (player[j]->body).y -= 5;
+                            LCD_draw_rectangle(player[j]->body);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            /*
+             *  else
+                {
+                    if(player[j-1]->prev_x > player[j]->body.x) // Move Tail to the Left
+                    {
+                        player[j]->dir = LEFT;
+                        LCD_erase_rectangle(player[j]->body);
+                        player[j]->body.x += 5;
+                        LCD_draw_rectangle(player[j]->body);
+                    }
+                    else if(player[j-1]->prev_x < player[j]->body.x) // Move Tail to the Right
+                    {
+                        player[j]->dir = RIGHT;
+                        LCD_erase_rectangle(player[j]->body);
+                        player[j]->body.x -= 5;
+                        LCD_draw_rectangle(player[j]->body);
+                    }
+                    else if(player[j-1]->prev_y > player[j]->body.y) // Move Tail Up
+                    {
+                        player[j]->dir = UP;
+                        LCD_erase_rectangle(player[j]->body);
+                        player[j]->body.y += 5;
+                        LCD_draw_rectangle(player[j]->body);
+                    }
+                    else if(player[j-1]->prev_y < player[j]->body.y) // Move Tail Down
+                    {
+                        player[j]->dir = DOWN;
+                        LCD_erase_rectangle(player[j]->body);
+                        player[j]->body.y -= 5;
+                        LCD_draw_rectangle(player[j]->body);
+                    }
+
+                    if (check_rect_collision(player[0]->body, player[j]->body)) //Kill Player
+                    {
+                        //player_state = DEAD;
+                        break;
+                    }
+                }
+            //Spawn food
+            if (food_state == DEAD)
+            {
+                food_state = ALIVE;
+
+                //"Random"-ish spawn until food doesn't spawn inside border (Replace with srand())
+                do
+                {
+                    initialize_circle(&food, (timer_count % LCD_MAX_X), (timer_count % LCD_MAX_Y), SNAKE_FOOD_RADIUS, BLUE, BLUE);
+                }while(check_rect_circ_collision(left_border, food) || check_rect_circ_collision(upper_border, food) || check_rect_circ_collision(right_border, food) || check_rect_circ_collision(lower_border, food));
+                LCD_draw_circle(food);
+            }
+
+
+            // Check player collision with borders
+
+            if (check_rect_collision(player[0]->body, left_border) || check_rect_collision(player[0]->body, upper_border) || check_rect_collision(player[0]->body, right_border) || check_rect_collision(player[0]->body, lower_border))
+            {
+                player_state = DEAD;
+            }
+
+            //Snake eats food
+            if (check_rect_circ_collision(player[0]->body, food))
+            {
+                food_state = DEAD;
+                LCD_erase_circle(food);
+                if (player_size < SNAKE_PLAYER_MAX_SIZE)
+                {
+                    //Snake grows
+                    initialize_rectangle(&player[player_size]->body, player[player_size-1]->prev_x, player[player_size-1]->prev_y, SNAKE_PLAYER_WIDTH, SNAKE_PLAYER_HEIGHT, BLUE);
+                    LCD_draw_rectangle(player[player_size]->body);
+                    player_size++;
+                }
+            }
+            */
+
+            if(button_flag)
+            {
+                player_state = DEAD;
+            }
+
+            //Delay for a little bit
+            for (uint32_t i = 0; i < SNAKE_TIMER_DELAY; i++);
+        }
+    }
+
+    //print ending screen
+    LCD_erase_screen();
+    LCD_write_string("GAME OVER",40,60,RED,9);
+    button_flag = 0;
+    while(!button_flag);
 }
 
 /* Runs Pattern Game */
@@ -702,12 +894,12 @@ void run_dodge(void)
     uint8_t obs_speed = 1;
 
     //initialize player state and obstacle states
-    DODGE_STATE player_state = ALIVE;
-    DODGE_STATE obs_1_state  = ALIVE;
-    DODGE_STATE obs_2_state  = DEAD;
-    DODGE_STATE obs_3_state  = DEAD;
-    DODGE_STATE obs_4_state  = DEAD;
-    DODGE_STATE bullet_state = DEAD;
+    STATE player_state = ALIVE;
+    STATE obs_1_state  = ALIVE;
+    STATE obs_2_state  = DEAD;
+    STATE obs_3_state  = DEAD;
+    STATE obs_4_state  = DEAD;
+    STATE bullet_state = DEAD;
 
     //initialize player and obstacle rectangles
     CIRCLE player;

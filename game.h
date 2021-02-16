@@ -3,6 +3,8 @@
  *
  *  Created on: Dec 7, 2017
  *      Author: alex
+ *
+ *  Modified by: Dishoungh
  */
 #include "msp.h"
 #include <stdint.h>
@@ -74,7 +76,7 @@
 #define DEBUG_BUTTON_Y          67
 
 //Macros for Pattern game
-#define PATTERN_SHOW_DELAY      2000000
+#define PATTERN_SHOW_DELAY      4000000
 #define PATTERN_R1_START_X      85
 #define PATTERN_R1_START_Y      50
 #define PATTERN_R2_START_X      50
@@ -84,12 +86,24 @@
 #define PATTERN_BOX_WIDTH       20
 #define PATTERN_BOX_HEIGHT      20
 
+//Macros for Snake Game
+#define SNAKE_TIMER_DELAY       800000
+#define SNAKE_BORDER_WIDTH      5
+#define SNAKE_BORDER_HEIGHT     5
+#define SNAKE_PLAYER_START_X    55
+#define SNAKE_PLAYER_START_Y    50
+#define SNAKE_PLAYER_WIDTH      5
+#define SNAKE_PLAYER_HEIGHT     5
+#define SNAKE_PLAYER_MAX_SIZE   10
+#define SNAKE_FOOD_RADIUS       3
+
 //enums used menu navigation
 typedef enum {
     DEBUG,
     PONG,
     DODGE,
-    PATTERN
+    PATTERN,
+    SNAKE
 }GAME;
 
 typedef enum {
@@ -102,7 +116,7 @@ typedef enum {
     DEAD,
     ALIVE,
     PAUSED
-}DODGE_STATE;
+}STATE;
 
 typedef enum
 {
@@ -120,11 +134,19 @@ typedef enum
     FAIL
 }PATTERN_STATE;
 
+//Enums Used for Snake Game
+typedef struct
+{
+    RECT body;
+    DIRECTION dir;
+    uint8_t prev_x, prev_y;
+}SNAKE_PLAYER;
+
 //variable for reading buttons globally
 uint8_t button_flag;
 
 //variables for navigating menu
-extern const GAME game_array[4];
+extern const GAME game_array[5];
 GAME current_game;
 GAME_MODE pong_mode;
 RECT start_screen;
