@@ -158,11 +158,12 @@ void run_snake(void)
 {
     // Objects
     RECT left_border, upper_border, right_border, lower_border;
-    SNAKE_PLAYER* player[SNAKE_PLAYER_MAX_SIZE];
+    SNAKE_PLAYER player[SNAKE_PLAYER_MAX_SIZE];
     CIRCLE food;
     STATE food_state = DEAD, player_state = ALIVE;
-    player[0]->dir = RIGHT;
-    uint8_t player_size = 1;
+    uint8_t player_size = SNAKE_PLAYER_START_SIZE, food_x, food_y;
+    uint32_t snake_delay = SNAKE_TIMER_DELAY;
+    DIRECTION dir = RIGHT;
 
     // Borders
     initialize_rectangle(&left_border, (LCD_MAX_X - SNAKE_BORDER_WIDTH), LCD_MIN_Y, SNAKE_BORDER_WIDTH, LCD_MAX_Y, RED);
@@ -175,164 +176,159 @@ void run_snake(void)
     LCD_draw_rectangle(right_border);
     LCD_draw_rectangle(lower_border);
 
-    // Head
-    initialize_rectangle(&player[0]->body, SNAKE_PLAYER_START_X, SNAKE_PLAYER_START_Y, SNAKE_PLAYER_WIDTH, SNAKE_PLAYER_HEIGHT, NAVY);
-    LCD_draw_rectangle(player[0]->body);
+    // Spawn Player (Horizontal)
+    for (uint8_t i = 0; i < SNAKE_PLAYER_START_SIZE; i++)
+    {
+        initialize_rectangle(&player[i].body, SNAKE_PLAYER_START_X + (5 * i), SNAKE_PLAYER_START_Y, SNAKE_PLAYER_WIDTH, SNAKE_PLAYER_HEIGHT, NAVY);
+        LCD_draw_rectangle(player[i].body);
+    }
 
     timer_count = 0;
     timer_delay = 20;
     while(timer_delay);
 
-    //Delete this
-    button_flag = 0;
-
     //enter game loop
     while(player_state == ALIVE)
     {
         ADC14->CTL0 |= ADC14_CTL0_SC;       //start ADC conversion
-        if(timer_trigger && ~timer_delay)
+        if (snake_delay <= 0)
         {
-            //Player Head Movement
-            if((bit_joy_x > JOY_HIGH_THRESHOLD)) //Right
-            {
-                player[0]->dir = RIGHT;
-            }
-            else if((bit_joy_x < JOY_LOW_THRESHOLD)) //Left
-            {
-                player[0]->dir = LEFT;
-            }
-            if((bit_joy_y > JOY_HIGH_THRESHOLD)) //Up
-            {
-                player[0]->dir = UP;
-            }
-            else if((bit_joy_y < JOY_LOW_THRESHOLD)) //Down
-            {
-                player[0]->dir = DOWN;
-            }
-
-            // Move Snake
-            for (uint8_t j = 0; j < player_size; j++)
-            {
-                player[j]->prev_x = player[j]->body.x;
-                player[j]->prev_y = player[j]->body.y;
-                // Move Head according to direction
-                if (!j)
-                {
-                    switch(player[j]->dir)
-                    {
-                        case RIGHT:
-                            LCD_erase_rectangle(player[j]->body);
-                            (player[j]->body).x -= 5;
-                            LCD_draw_rectangle(player[j]->body);
-                            break;
-                        case LEFT:
-                            LCD_erase_rectangle(player[j]->body);
-                            (player[j]->body).x += 5;
-                            LCD_draw_rectangle(player[j]->body);
-                            break;
-                        case UP:
-                            LCD_erase_rectangle(player[j]->body);
-                            (player[j]->body).y += 5;
-                            LCD_draw_rectangle(player[j]->body);
-                            break;
-                        case DOWN:
-                            LCD_erase_rectangle(player[j]->body);
-                            (player[j]->body).y -= 5;
-                            LCD_draw_rectangle(player[j]->body);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-
-            /*
-             *  else
-                {
-                    if(player[j-1]->prev_x > player[j]->body.x) // Move Tail to the Left
-                    {
-                        player[j]->dir = LEFT;
-                        LCD_erase_rectangle(player[j]->body);
-                        player[j]->body.x += 5;
-                        LCD_draw_rectangle(player[j]->body);
-                    }
-                    else if(player[j-1]->prev_x < player[j]->body.x) // Move Tail to the Right
-                    {
-                        player[j]->dir = RIGHT;
-                        LCD_erase_rectangle(player[j]->body);
-                        player[j]->body.x -= 5;
-                        LCD_draw_rectangle(player[j]->body);
-                    }
-                    else if(player[j-1]->prev_y > player[j]->body.y) // Move Tail Up
-                    {
-                        player[j]->dir = UP;
-                        LCD_erase_rectangle(player[j]->body);
-                        player[j]->body.y += 5;
-                        LCD_draw_rectangle(player[j]->body);
-                    }
-                    else if(player[j-1]->prev_y < player[j]->body.y) // Move Tail Down
-                    {
-                        player[j]->dir = DOWN;
-                        LCD_erase_rectangle(player[j]->body);
-                        player[j]->body.y -= 5;
-                        LCD_draw_rectangle(player[j]->body);
-                    }
-
-                    if (check_rect_collision(player[0]->body, player[j]->body)) //Kill Player
-                    {
-                        //player_state = DEAD;
-                        break;
-                    }
-                }
-            //Spawn food
+            //Place Food on the Ground if Food doesn't Exist
             if (food_state == DEAD)
             {
                 food_state = ALIVE;
 
-                //"Random"-ish spawn until food doesn't spawn inside border (Replace with srand())
-                do
+                if (player_size % 2)
                 {
-                    initialize_circle(&food, (timer_count % LCD_MAX_X), (timer_count % LCD_MAX_Y), SNAKE_FOOD_RADIUS, BLUE, BLUE);
-                }while(check_rect_circ_collision(left_border, food) || check_rect_circ_collision(upper_border, food) || check_rect_circ_collision(right_border, food) || check_rect_circ_collision(lower_border, food));
+                    food_x = 20;
+                }
+                else
+                {
+                    food_x = 105;
+                }
+
+                if (!(player_size % 2))
+                {
+                    food_y = 20;
+                }
+                else
+                {
+                    food_y = 105;
+                }
+                initialize_circle(&food,food_x,food_y,SNAKE_FOOD_RADIUS,YELLOW,YELLOW);
+                //initialize_circle(&food,(timer_count % (LCD_MAX_X - SNAKE_BORDER_WIDTH - 10)),(timer_count % (LCD_MAX_Y - SNAKE_BORDER_HEIGHT - 10)),SNAKE_FOOD_RADIUS,YELLOW,YELLOW);
                 LCD_draw_circle(food);
             }
 
-
-            // Check player collision with borders
-
-            if (check_rect_collision(player[0]->body, left_border) || check_rect_collision(player[0]->body, upper_border) || check_rect_collision(player[0]->body, right_border) || check_rect_collision(player[0]->body, lower_border))
+            // Move Snake
+            for (uint8_t i = 0; i < player_size; i++)
             {
-                player_state = DEAD;
-            }
-
-            //Snake eats food
-            if (check_rect_circ_collision(player[0]->body, food))
-            {
-                food_state = DEAD;
-                LCD_erase_circle(food);
-                if (player_size < SNAKE_PLAYER_MAX_SIZE)
+                player[i].prev_x = player[i].body.x;
+                player[i].prev_y = player[i].body.y;
+                // Move Head according to direction
+                if (!i)
                 {
-                    //Snake grows
-                    initialize_rectangle(&player[player_size]->body, player[player_size-1]->prev_x, player[player_size-1]->prev_y, SNAKE_PLAYER_WIDTH, SNAKE_PLAYER_HEIGHT, BLUE);
-                    LCD_draw_rectangle(player[player_size]->body);
-                    player_size++;
+                    //Player Head Movement
+                    if((bit_joy_x > JOY_HIGH_THRESHOLD) && (dir != LEFT)) //Right
+                    {
+                        dir = RIGHT;
+                    }
+                    else if((bit_joy_x < JOY_LOW_THRESHOLD) && (dir != RIGHT)) //Left
+                    {
+                        dir = LEFT;
+                    }
+                    else if((bit_joy_y > JOY_HIGH_THRESHOLD) && (dir != DOWN)) //Up
+                    {
+                        dir = UP;
+                    }
+                    else if((bit_joy_y < JOY_LOW_THRESHOLD) && (dir != UP)) //Down
+                    {
+                        dir = DOWN;
+                    }
+
+                    switch(dir)
+                    {
+                        case RIGHT:
+                            LCD_erase_rectangle(player[i].body);
+                            (player[i].body).x -= 5;
+                            LCD_draw_rectangle(player[i].body);
+                            break;
+                        case LEFT:
+                            LCD_erase_rectangle(player[i].body);
+                            (player[i].body).x += 5;
+                            LCD_draw_rectangle(player[i].body);
+                            break;
+                        case UP:
+                            LCD_erase_rectangle(player[i].body);
+                            (player[i].body).y += 5;
+                            LCD_draw_rectangle(player[i].body);
+                            break;
+                        case DOWN:
+                            LCD_erase_rectangle(player[i].body);
+                            (player[i].body).y -= 5;
+                            LCD_draw_rectangle(player[i].body);
+                            break;
+                        default:
+                            break;
+                    }
+
+                    // Border Collision Check
+                    if (check_rect_collision(player[i].body, upper_border) || check_rect_collision(player[i].body, left_border) || check_rect_collision(player[i].body, right_border) || check_rect_collision(player[i].body, lower_border))
+                    {
+                        player_state = DEAD;
+                        break;
+                    }
+
+                    //Snake Head Eat Food
+                    if (check_rect_circ_collision(player[i].body, food))
+                    {
+                        food_state = DEAD;
+                        LCD_erase_circle(food);
+
+                        //Grow Snake from Tail
+                        if (player_size < SNAKE_PLAYER_MAX_SIZE)
+                        {
+                            initialize_rectangle(&player[player_size].body, player[player_size-1].prev_x, player[player_size-1].prev_y, SNAKE_PLAYER_WIDTH, SNAKE_PLAYER_HEIGHT, NAVY);
+                            LCD_draw_rectangle(player[player_size].body);
+                            player_size++;
+                        }
+                    }
+                }
+                else
+                {
+                    //Follow
+                    LCD_erase_rectangle(player[i].body);
+                    (player[i].body).x = player[i-1].prev_x;
+                    (player[i].body).y = player[i-1].prev_y;
+                    LCD_draw_rectangle(player[i].body);
+
+                    //Collision Between Head and Other Parts of the Tail (Except the Square Behind Head)
+                    if (check_rect_collision(player[0].body, player[i].body) && (i-1))
+                    {
+                        player_state = DEAD;
+                        break;
+                    }
                 }
             }
-            */
 
-            if(button_flag)
-            {
-                player_state = DEAD;
-            }
 
-            //Delay for a little bit
-            for (uint32_t i = 0; i < SNAKE_TIMER_DELAY; i++);
+            snake_delay = SNAKE_TIMER_DELAY;
+        }
+        else
+        {
+            snake_delay--;
         }
     }
 
     //print ending screen
     LCD_erase_screen();
+    uint8_t size_string[5] = "     ";
+    itoa(player_size,size_string);
+
+    //print ending screen
     LCD_write_string("GAME OVER",40,60,RED,9);
+    LCD_write_string("SIZE:",55,40,BLACK,11);
+    LCD_write_string(size_string,15,40,BLACK,sizeof(size_string)/sizeof(uint8_t));
     button_flag = 0;
     while(!button_flag);
 }

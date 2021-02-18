@@ -87,14 +87,15 @@
 #define PATTERN_BOX_HEIGHT      20
 
 //Macros for Snake Game
-#define SNAKE_TIMER_DELAY       800000
+#define SNAKE_TIMER_DELAY       125000
 #define SNAKE_BORDER_WIDTH      5
 #define SNAKE_BORDER_HEIGHT     5
 #define SNAKE_PLAYER_START_X    55
 #define SNAKE_PLAYER_START_Y    50
 #define SNAKE_PLAYER_WIDTH      5
 #define SNAKE_PLAYER_HEIGHT     5
-#define SNAKE_PLAYER_MAX_SIZE   10
+#define SNAKE_PLAYER_START_SIZE 5
+#define SNAKE_PLAYER_MAX_SIZE   50
 #define SNAKE_FOOD_RADIUS       3
 
 //enums used menu navigation
@@ -138,7 +139,6 @@ typedef enum
 typedef struct
 {
     RECT body;
-    DIRECTION dir;
     uint8_t prev_x, prev_y;
 }SNAKE_PLAYER;
 
@@ -206,5 +206,11 @@ void end_pong(void);
 
 /*functions for dodge*/
 void run_dodge(void);
+
+/*functions for pattern*/
+void run_pattern(void);
+
+/*functions for snake*/
+void run_snake(void);
 
 #endif /* GAME_H_ */
